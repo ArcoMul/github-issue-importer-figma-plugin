@@ -1,14 +1,14 @@
 figma.showUI(__html__, { width: 420, height: 560, title: 'GitHub Issue Importer' });
 
-const FRAME_WIDTH      = 800;
-const FRAME_PADDING    = 32;
-const HEADING_SPACER   = 12;
-const FONT_SIZE_TITLE  = 28;
-const FONT_SIZE_BODY   = 14;
-const FONT_SIZE_CODE   = 13;
+const FRAME_WIDTH = 800;
+const FRAME_PADDING = 32;
+const HEADING_SPACER = 12;
+const FONT_SIZE_TITLE = 28;
+const FONT_SIZE_BODY = 14;
+const FONT_SIZE_CODE = 13;
 const LINE_HEIGHT_BODY = 22;
 const LINE_HEIGHT_CODE = 20;
-const HEADING_SIZES    = { 1: 24, 2: 20, 3: 16 };
+const HEADING_SIZES = { 1: 24, 2: 20, 3: 16 };
 
 figma.ui.onmessage = async (msg) => {
   switch (msg.type) {
@@ -17,7 +17,12 @@ figma.ui.onmessage = async (msg) => {
         figma.clientStorage.getAsync('gh_pat'),
         figma.clientStorage.getAsync('gh_repo'),
       ]);
-      figma.ui.postMessage({ type: 'settings-loaded', token: token || '', repo: repo || '', selectedIssueNumber: getSelectedIssueNumber() });
+      figma.ui.postMessage({
+        type: 'settings-loaded',
+        token: token || '',
+        repo: repo || '',
+        selectedIssueNumber: getSelectedIssueNumber(),
+      });
       break;
     }
     case 'save-settings': {
@@ -44,7 +49,10 @@ figma.ui.onmessage = async (msg) => {
 };
 
 figma.on('selectionchange', () => {
-  figma.ui.postMessage({ type: 'selection-changed', selectedIssueNumber: getSelectedIssueNumber() });
+  figma.ui.postMessage({
+    type: 'selection-changed',
+    selectedIssueNumber: getSelectedIssueNumber(),
+  });
 });
 
 /**
@@ -123,10 +131,10 @@ function getOrCreateFrame(issueNumber, title) {
   frame.primaryAxisSizingMode = 'AUTO';
   frame.counterAxisSizingMode = 'FIXED';
   frame.itemSpacing = 12;
-  frame.paddingTop    = FRAME_PADDING;
+  frame.paddingTop = FRAME_PADDING;
   frame.paddingBottom = FRAME_PADDING;
-  frame.paddingLeft   = FRAME_PADDING;
-  frame.paddingRight  = FRAME_PADDING;
+  frame.paddingLeft = FRAME_PADDING;
+  frame.paddingRight = FRAME_PADDING;
   frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
 
   return frame;
@@ -137,11 +145,11 @@ function getOrCreateFrame(issueNumber, title) {
  * All parameters are optional and fall back to body-text defaults.
  */
 function makeTextNode({
-  family     = 'Inter',
-  style      = 'Regular',
-  size       = FONT_SIZE_BODY,
+  family = 'Inter',
+  style = 'Regular',
+  size = FONT_SIZE_BODY,
   lineHeight = null,
-  color      = { r: 0.2, g: 0.2, b: 0.2 },
+  color = { r: 0.2, g: 0.2, b: 0.2 },
 } = {}) {
   const node = figma.createText();
   node.fontName = { family, style };
@@ -161,13 +169,20 @@ function makeTextNode({
  */
 function createBlockNode(block) {
   switch (block.type) {
-    case 'heading':        return createHeadingNode(block);
-    case 'paragraph':      return createParagraphNode(block);
-    case 'codeBlock':      return createCodeBlockNode(block);
-    case 'listGroup':      return createListGroupNode(block);
-    case 'blockquote':     return createBlockquoteNode(block);
-    case 'horizontalRule': return createHorizontalRuleNode();
-    default:               return null;
+    case 'heading':
+      return createHeadingNode(block);
+    case 'paragraph':
+      return createParagraphNode(block);
+    case 'codeBlock':
+      return createCodeBlockNode(block);
+    case 'listGroup':
+      return createListGroupNode(block);
+    case 'blockquote':
+      return createBlockquoteNode(block);
+    case 'horizontalRule':
+      return createHorizontalRuleNode();
+    default:
+      return null;
   }
 }
 
@@ -175,7 +190,11 @@ function createBlockNode(block) {
  * Creates a bold title text node for the issue title.
  */
 function createTitleNode(title) {
-  const node = makeTextNode({ style: 'Bold', size: FONT_SIZE_TITLE, color: { r: 0.067, g: 0.067, b: 0.067 } });
+  const node = makeTextNode({
+    style: 'Bold',
+    size: FONT_SIZE_TITLE,
+    color: { r: 0.067, g: 0.067, b: 0.067 },
+  });
   node.characters = title;
   return node;
 }
@@ -184,8 +203,12 @@ function createTitleNode(title) {
  * Creates a bold heading text node sized by level (H1–H3).
  */
 function createHeadingNode(block) {
-  const node = makeTextNode({ style: 'Bold', size: HEADING_SIZES[block.level] || 16, color: { r: 0.067, g: 0.067, b: 0.067 } });
-  node.characters = block.segments.map(s => s.text).join('');
+  const node = makeTextNode({
+    style: 'Bold',
+    size: HEADING_SIZES[block.level] || 16,
+    color: { r: 0.067, g: 0.067, b: 0.067 },
+  });
+  node.characters = block.segments.map((s) => s.text).join('');
   applyInlineFormatting(node, block.segments);
   return node;
 }
@@ -195,7 +218,7 @@ function createHeadingNode(block) {
  */
 function createParagraphNode(block) {
   const node = makeTextNode({ lineHeight: LINE_HEIGHT_BODY });
-  node.characters = block.segments.map(s => s.text).join('');
+  node.characters = block.segments.map((s) => s.text).join('');
   applyInlineFormatting(node, block.segments);
   return node;
 }
@@ -209,15 +232,20 @@ function createCodeBlockNode(block) {
   codeFrame.resize(FRAME_WIDTH - FRAME_PADDING * 2, 40);
   codeFrame.primaryAxisSizingMode = 'AUTO';
   codeFrame.counterAxisSizingMode = 'FIXED';
-  codeFrame.paddingTop    = 12;
+  codeFrame.paddingTop = 12;
   codeFrame.paddingBottom = 12;
-  codeFrame.paddingLeft   = 16;
-  codeFrame.paddingRight  = 16;
+  codeFrame.paddingLeft = 16;
+  codeFrame.paddingRight = 16;
   codeFrame.cornerRadius = 6;
   codeFrame.fills = [{ type: 'SOLID', color: { r: 0.953, g: 0.953, b: 0.953 } }];
   codeFrame.layoutAlign = 'STRETCH';
 
-  const textNode = makeTextNode({ family: 'Courier New', size: FONT_SIZE_CODE, lineHeight: LINE_HEIGHT_CODE, color: { r: 0.15, g: 0.15, b: 0.15 } });
+  const textNode = makeTextNode({
+    family: 'Courier New',
+    size: FONT_SIZE_CODE,
+    lineHeight: LINE_HEIGHT_CODE,
+    color: { r: 0.15, g: 0.15, b: 0.15 },
+  });
   textNode.characters = block.text;
 
   codeFrame.appendChild(textNode);
@@ -239,7 +267,7 @@ function createListGroupNode(block) {
     const indent = '    '.repeat(item.indent || 0);
     const prefix = item.ordered ? `${item.index}. ` : '• ';
     const offset = fullText.length + indent.length + prefix.length;
-    fullText += indent + prefix + item.segments.map(s => s.text).join('');
+    fullText += indent + prefix + item.segments.map((s) => s.text).join('');
     if (idx < block.items.length - 1) fullText += '\n';
     formattingItems.push({ offset, segments: item.segments });
   }
@@ -257,8 +285,12 @@ function createListGroupNode(block) {
  * Creates an italic, grey text node for a blockquote.
  */
 function createBlockquoteNode(block) {
-  const node = makeTextNode({ style: 'Italic', lineHeight: LINE_HEIGHT_BODY, color: { r: 0.45, g: 0.45, b: 0.45 } });
-  node.characters = block.segments.map(s => s.text).join('');
+  const node = makeTextNode({
+    style: 'Italic',
+    lineHeight: LINE_HEIGHT_BODY,
+    color: { r: 0.45, g: 0.45, b: 0.45 },
+  });
+  node.characters = block.segments.map((s) => s.text).join('');
   applyInlineFormatting(node, block.segments);
   return node;
 }

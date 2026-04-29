@@ -1,0 +1,16 @@
+{
+  "name": "github-issue-importer",
+  "version": "1.0.0",
+  "description": "A Figma plugin that fetches a GitHub issue from a private or public repository and renders it into a Figma frame as styled text, preserving the markdown formatting from the issue body.",
+  "main": "code.js",
+  "scripts": {
+    "format": "prettier --write package.json *.js *.html *.md"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "prettier": "^3.8.3"
+  }
+}

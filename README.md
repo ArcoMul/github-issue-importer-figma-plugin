@@ -6,7 +6,7 @@ A Figma plugin that fetches a GitHub issue from a private or public repository a
 
 - Imports issue **title** and **description** directly into a Figma frame
 - Preserves markdown formatting:
-  - **Bold**, *italic*, ***bold+italic***
+  - **Bold**, _italic_, **_bold+italic_**
   - `inline code` (monospace, red tint)
   - Fenced code blocks (grey background frame, Courier New)
   - Headings H1–H3 (24 / 20 / 16 px)
@@ -26,10 +26,28 @@ A Figma plugin that fetches a GitHub issue from a private or public repository a
 figma-github/
 ├── manifest.json   # Plugin metadata and network permissions
 ├── code.js         # Plugin sandbox — all Figma API calls
-└── ui.html         # Plugin UI — fetch, parse, and send data to code.js
+├── ui.html         # Plugin UI — fetch, parse, and send data to code.js
+├── package.json    # Dev tooling (Prettier)
+└── .prettierrc     # Prettier config
 ```
 
-No build step. No dependencies. Load the files directly in Figma.
+No build step required. The three files Figma needs (`manifest.json`, `code.js`, `ui.html`) are loaded directly.
+
+## Development
+
+Install dev dependencies (Prettier) once:
+
+```bash
+npm install
+```
+
+Format package.json, and all .md, .js and .html files:
+
+```bash
+npm run format
+```
+
+Prettier is configured in `.prettierrc`.
 
 ## Setup
 
@@ -69,20 +87,20 @@ When you select a frame that was previously imported by this plugin (identified 
 
 ## Markdown Rendering
 
-| Markdown syntax | Figma output |
-|---|---|
-| `# H1` / `## H2` / `### H3` | Inter Bold 24 / 20 / 16 px |
-| `**bold**` or `__bold__` | Inter Bold |
-| `*italic*` or `_italic_` | Inter Italic |
-| `***bold italic***` | Inter Bold Italic |
-| `` `inline code` `` | Courier New 13 px, red tint |
-| ```` ```code block``` ```` | Grey frame, Courier New 13 px |
-| `- item` / `* item` / `+ item` | `•` prefix, indented |
-| `1. item` | Numbered prefix, indented |
-| `> quote` | Inter Italic, grey |
-| `~~strike~~` | Strikethrough decoration |
-| `[text](url)` | Blue hyperlink |
-| `---` / `***` / `___` | Horizontal rule (em-dash string) |
+| Markdown syntax                | Figma output                     |
+| ------------------------------ | -------------------------------- |
+| `# H1` / `## H2` / `### H3`    | Inter Bold 24 / 20 / 16 px       |
+| `**bold**` or `__bold__`       | Inter Bold                       |
+| `*italic*` or `_italic_`       | Inter Italic                     |
+| `***bold italic***`            | Inter Bold Italic                |
+| `` `inline code` ``            | Courier New 13 px, red tint      |
+| ` ```code block``` `           | Grey frame, Courier New 13 px    |
+| `- item` / `* item` / `+ item` | `•` prefix, indented             |
+| `1. item`                      | Numbered prefix, indented        |
+| `> quote`                      | Inter Italic, grey               |
+| `~~strike~~`                   | Strikethrough decoration         |
+| `[text](url)`                  | Blue hyperlink                   |
+| `---` / `***` / `___`          | Horizontal rule (em-dash string) |
 
 H4–H6 are rendered as H3. Images are not supported (the alt text is rendered as plain text). HTML tags within markdown are rendered as-is.
 
@@ -124,12 +142,12 @@ Fonts are loaded with `figma.loadFontAsync` before any text node is created. The
 
 ## Error Messages
 
-| Message | Cause |
-|---|---|
-| Invalid token. Check your PAT and try again. | HTTP 401 — token is wrong or expired |
-| Access forbidden. Make sure your PAT has the repo scope. | HTTP 403 — token lacks permissions |
-| Rate limit exceeded. Resets at HH:MM:SS. | HTTP 403 with `X-RateLimit-Remaining: 0` |
-| Issue not found. Check the repository name and issue number. | HTTP 404 — wrong repo or issue number |
+| Message                                                      | Cause                                    |
+| ------------------------------------------------------------ | ---------------------------------------- |
+| Invalid token. Check your PAT and try again.                 | HTTP 401 — token is wrong or expired     |
+| Access forbidden. Make sure your PAT has the repo scope.     | HTTP 403 — token lacks permissions       |
+| Rate limit exceeded. Resets at HH:MM:SS.                     | HTTP 403 with `X-RateLimit-Remaining: 0` |
+| Issue not found. Check the repository name and issue number. | HTTP 404 — wrong repo or issue number    |
 
 ## Packaging
 

@@ -1,741 +1,832 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitHub Issue Importer</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Issue Importer</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    :root {
-      --bg: #2C2C2C;
-      --surface: #383838;
-      --border: #555;
-      --border-focus: #18A0FB;
-      --text: #E5E5E5;
-      --text-muted: #999;
-      --accent: #18A0FB;
-      --accent-hover: #0D8DE3;
-      --accent-disabled: #1A5276;
-      --error: #F24822;
-      --success: #1BC47D;
-      --input-bg: #1E1E1E;
-      --radius: 6px;
-    }
+      :root {
+        --bg: #2c2c2c;
+        --surface: #383838;
+        --border: #555;
+        --border-focus: #18a0fb;
+        --text: #e5e5e5;
+        --text-muted: #999;
+        --accent: #18a0fb;
+        --accent-hover: #0d8de3;
+        --accent-disabled: #1a5276;
+        --error: #f24822;
+        --success: #1bc47d;
+        --input-bg: #1e1e1e;
+        --radius: 6px;
+      }
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 12px;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
+      body {
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        font-size: 12px;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    .scroll-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+      .scroll-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
 
-    .scroll-area::-webkit-scrollbar { width: 4px; }
-    .scroll-area::-webkit-scrollbar-track { background: transparent; }
-    .scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+      .scroll-area::-webkit-scrollbar {
+        width: 4px;
+      }
+      .scroll-area::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .scroll-area::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 2px;
+      }
 
-    section { display: flex; flex-direction: column; gap: 10px; }
+      section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
 
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
+      .section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+      }
 
-    .field { display: flex; flex-direction: column; gap: 5px; }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
 
-    label {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+      label {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
 
-    .input-wrap {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
+      .input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
 
-    input {
-      width: 100%;
-      background: var(--input-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 12px;
-      padding: 8px 10px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
+      input {
+        width: 100%;
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 12px;
+        padding: 8px 10px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
 
-    input:focus { border-color: var(--border-focus); }
-    input::placeholder { color: var(--text-muted); }
+      input:focus {
+        border-color: var(--border-focus);
+      }
+      input::placeholder {
+        color: var(--text-muted);
+      }
 
-    input.has-toggle { padding-right: 36px; }
+      input.has-toggle {
+        padding-right: 36px;
+      }
 
-    .toggle-btn {
-      position: absolute;
-      right: 8px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-muted);
-      padding: 2px;
-      display: flex;
-      align-items: center;
-      border-radius: 3px;
-      transition: color 0.15s;
-    }
-    .toggle-btn:hover { color: var(--text); }
+      .toggle-btn {
+        position: absolute;
+        right: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        padding: 2px;
+        display: flex;
+        align-items: center;
+        border-radius: 3px;
+        transition: color 0.15s;
+      }
+      .toggle-btn:hover {
+        color: var(--text);
+      }
 
-    .hint {
-      font-size: 10px;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
-    .hint a { color: var(--accent); text-decoration: none; }
+      .hint {
+        font-size: 10px;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+      .hint a {
+        color: var(--accent);
+        text-decoration: none;
+      }
 
-    .divider {
-      height: 1px;
-      background: var(--border);
-      opacity: 0.4;
-    }
+      .divider {
+        height: 1px;
+        background: var(--border);
+        opacity: 0.4;
+      }
 
-    .btn {
-      width: 100%;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      padding: 10px;
-      cursor: pointer;
-      transition: background 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .btn:hover:not(:disabled) { background: var(--accent-hover); }
-    .btn:disabled { background: var(--accent-disabled); cursor: not-allowed; opacity: 0.7; }
+      .btn {
+        width: 100%;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px;
+        cursor: pointer;
+        transition: background 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+      .btn:disabled {
+        background: var(--accent-disabled);
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
 
-    .spinner {
-      display: none;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+      .spinner {
+        display: none;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-    .status {
-      display: none;
-      font-size: 11px;
-      line-height: 1.5;
-      padding: 8px 10px;
-      border-radius: var(--radius);
-      border: 1px solid transparent;
-    }
-    .status.error {
-      display: block;
-      background: rgba(242, 72, 34, 0.12);
-      border-color: rgba(242, 72, 34, 0.4);
-      color: #ff7a5a;
-    }
-    .status.success {
-      display: block;
-      background: rgba(27, 196, 125, 0.12);
-      border-color: rgba(27, 196, 125, 0.4);
-      color: var(--success);
-    }
+      .status {
+        display: none;
+        font-size: 11px;
+        line-height: 1.5;
+        padding: 8px 10px;
+        border-radius: var(--radius);
+        border: 1px solid transparent;
+      }
+      .status.error {
+        display: block;
+        background: rgba(242, 72, 34, 0.12);
+        border-color: rgba(242, 72, 34, 0.4);
+        color: #ff7a5a;
+      }
+      .status.success {
+        display: block;
+        background: rgba(27, 196, 125, 0.12);
+        border-color: rgba(27, 196, 125, 0.4);
+        color: var(--success);
+      }
 
-    .footer {
-      padding: 10px 16px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-    }
+      .footer {
+        padding: 10px 16px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+      }
 
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: color 0.15s, background 0.15s;
-    }
-    .close-btn:hover { color: var(--text); background: var(--surface); }
+      .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition:
+          color 0.15s,
+          background 0.15s;
+      }
+      .close-btn:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
 
-    .refresh-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      background: rgba(24, 160, 251, 0.10);
-      border: 1px solid rgba(24, 160, 251, 0.30);
-      border-radius: var(--radius);
-      padding: 8px 10px;
-      font-size: 11px;
-      color: var(--accent);
-    }
+      .refresh-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background: rgba(24, 160, 251, 0.1);
+        border: 1px solid rgba(24, 160, 251, 0.3);
+        border-radius: var(--radius);
+        padding: 8px 10px;
+        font-size: 11px;
+        color: var(--accent);
+      }
 
-    .refresh-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 10px;
-      cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
-      transition: background 0.15s;
-    }
-    .refresh-btn:hover:not(:disabled) { background: var(--accent-hover); }
-    .refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  </style>
-</head>
-<body>
+      .refresh-btn {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: background 0.15s;
+      }
+      .refresh-btn:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+      .refresh-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scroll-area">
+      <section>
+        <div class="section-title">GitHub Settings</div>
 
-<div class="scroll-area">
-  <section>
-    <div class="section-title">GitHub Settings</div>
+        <div class="field">
+          <label for="pat">Personal Access Token</label>
+          <div class="input-wrap">
+            <input
+              type="password"
+              id="pat"
+              class="has-toggle"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" class="toggle-btn" id="pat-toggle" aria-label="Toggle visibility">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <div class="hint">
+            <a
+              href="https://github.com/settings/tokens/new?scopes=repo,read:user,read:project"
+              target="_blank"
+              >Generate a token on GitHub →</a
+            >
+          </div>
+        </div>
 
-    <div class="field">
-      <label for="pat">Personal Access Token</label>
-      <div class="input-wrap">
-        <input
-          type="password"
-          id="pat"
-          class="has-toggle"
-          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-          autocomplete="off"
-          spellcheck="false"
-        >
-        <button type="button" class="toggle-btn" id="pat-toggle" aria-label="Toggle visibility">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </button>
+        <div class="field">
+          <label for="repo">Repository</label>
+          <input
+            type="text"
+            id="repo"
+            placeholder="owner/repo"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <div id="refresh-banner" class="refresh-banner" style="display: none">
+        <span id="refresh-label"></span>
+        <button class="refresh-btn" id="refresh-btn">↻ Refresh</button>
       </div>
-      <div class="hint"><a href="https://github.com/settings/tokens/new?scopes=repo,read:user,read:project" target="_blank">Generate a token on GitHub →</a></div>
+
+      <section>
+        <div class="section-title">Import Issue</div>
+
+        <div class="field">
+          <label for="issue-num">Issue Number</label>
+          <input type="number" id="issue-num" placeholder="42" min="1" />
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <button class="btn" id="fetch-btn">
+          <div class="spinner" id="spinner"></div>
+          <span id="btn-label">Fetch &amp; Import</span>
+        </button>
+
+        <div class="hint">
+          If a frame is selected, its contents will be replaced. Otherwise a new frame is created at
+          the viewport center.
+        </div>
+      </section>
     </div>
 
-    <div class="field">
-      <label for="repo">Repository</label>
-      <input type="text" id="repo" placeholder="owner/repo" autocomplete="off" spellcheck="false">
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <div id="refresh-banner" class="refresh-banner" style="display:none">
-    <span id="refresh-label"></span>
-    <button class="refresh-btn" id="refresh-btn">↻ Refresh</button>
-  </div>
-
-  <section>
-    <div class="section-title">Import Issue</div>
-
-    <div class="field">
-      <label for="issue-num">Issue Number</label>
-      <input type="number" id="issue-num" placeholder="42" min="1">
+    <div class="footer">
+      <button class="close-btn" id="close-btn">Close</button>
     </div>
 
-    <div id="status" class="status"></div>
+    <script>
+      const patInput = document.getElementById('pat');
+      const repoInput = document.getElementById('repo');
+      const issueInput = document.getElementById('issue-num');
+      const fetchBtn = document.getElementById('fetch-btn');
+      const spinner = document.getElementById('spinner');
+      const btnLabel = document.getElementById('btn-label');
+      const statusEl = document.getElementById('status');
+      const patToggle = document.getElementById('pat-toggle');
+      const closeBtn = document.getElementById('close-btn');
+      const refreshBanner = document.getElementById('refresh-banner');
+      const refreshLabel = document.getElementById('refresh-label');
+      const refreshBtn = document.getElementById('refresh-btn');
 
-    <button class="btn" id="fetch-btn">
-      <div class="spinner" id="spinner"></div>
-      <span id="btn-label">Fetch &amp; Import</span>
-    </button>
+      window.addEventListener('message', (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
 
-    <div class="hint">
-      If a frame is selected, its contents will be replaced. Otherwise a new frame is created at the viewport center.
-    </div>
-  </section>
-</div>
-
-<div class="footer">
-  <button class="close-btn" id="close-btn">Close</button>
-</div>
-
-<script>
-  const patInput      = document.getElementById('pat');
-  const repoInput     = document.getElementById('repo');
-  const issueInput    = document.getElementById('issue-num');
-  const fetchBtn      = document.getElementById('fetch-btn');
-  const spinner       = document.getElementById('spinner');
-  const btnLabel      = document.getElementById('btn-label');
-  const statusEl      = document.getElementById('status');
-  const patToggle     = document.getElementById('pat-toggle');
-  const closeBtn      = document.getElementById('close-btn');
-  const refreshBanner = document.getElementById('refresh-banner');
-  const refreshLabel  = document.getElementById('refresh-label');
-  const refreshBtn    = document.getElementById('refresh-btn');
-
-  window.addEventListener('message', (event) => {
-    const msg = event.data.pluginMessage;
-    if (!msg) return;
-
-    switch (msg.type) {
-      case 'settings-loaded':
-        patInput.value  = msg.token || '';
-        repoInput.value = msg.repo  || '';
-        updateRefreshBanner(msg.selectedIssueNumber);
-        break;
-      case 'selection-changed':
-        updateRefreshBanner(msg.selectedIssueNumber);
-        break;
-      case 'insert-complete':
-        setStatus('success', 'Issue imported successfully!');
-        setLoading(false);
-        break;
-      case 'insert-error':
-        setStatus('error', `Insert failed: ${msg.message}`);
-        setLoading(false);
-        break;
-    }
-  });
-
-  document.addEventListener('DOMContentLoaded', () => {
-    parent.postMessage({ pluginMessage: { type: 'load-settings' } }, '*');
-  });
-
-  patInput.addEventListener('blur',  saveSettings);
-  repoInput.addEventListener('blur', saveSettings);
-
-  patToggle.addEventListener('click', () => {
-    patInput.type = patInput.type === 'password' ? 'text' : 'password';
-  });
-
-  closeBtn.addEventListener('click', () => {
-    parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
-  });
-
-  issueInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') fetchBtn.click();
-  });
-
-  /**
-   * Validates inputs, fetches the issue from GitHub, parses its body,
-   * and sends the result to the plugin sandbox for rendering.
-   */
-  async function doImport() {
-    const token    = patInput.value.trim();
-    const repo     = repoInput.value.trim();
-    const issueNum = issueInput.value.trim();
-
-    clearStatus();
-
-    if (!token)                       return setStatus('error', 'Personal Access Token is required.');
-    if (!repo || !repo.includes('/')) return setStatus('error', 'Repository must be in owner/repo format.');
-    if (!issueNum || isNaN(Number(issueNum)) || Number(issueNum) < 1)
-      return setStatus('error', 'Issue number must be a positive integer.');
-
-    saveSettings();
-    setLoading(true);
-
-    try {
-      const issue  = await fetchIssue(token, repo, issueNum);
-      const blocks = parseMarkdown(issue.body || '');
-      parent.postMessage({
-        pluginMessage: {
-          type: 'insert-issue',
-          issueNumber: issueNum,
-          title: issue.title,
-          blocks,
-        }
-      }, '*');
-    } catch (err) {
-      setStatus('error', err.message);
-      setLoading(false);
-    }
-  }
-
-  fetchBtn.addEventListener('click', doImport);
-  refreshBtn.addEventListener('click', doImport);
-
-  /**
-   * Persists the current PAT and repository values to the plugin sandbox for storage.
-   */
-  function saveSettings() {
-    parent.postMessage({
-      pluginMessage: {
-        type: 'save-settings',
-        token: patInput.value.trim(),
-        repo:  repoInput.value.trim(),
-      }
-    }, '*');
-  }
-
-  /**
-   * Toggles the loading state: disables both import buttons and shows the spinner.
-   */
-  function setLoading(active) {
-    fetchBtn.disabled     = active;
-    refreshBtn.disabled   = active;
-    spinner.style.display = active ? 'block' : 'none';
-    btnLabel.textContent  = active ? 'Importing…' : 'Fetch & Import';
-  }
-
-  /**
-   * Displays a status message. type is 'success' or 'error'.
-   */
-  function setStatus(type, message) {
-    statusEl.className      = `status ${type}`;
-    statusEl.textContent    = message;
-    statusEl.style.display  = 'block';
-  }
-
-  /**
-   * Hides and resets the status message area.
-   */
-  function clearStatus() {
-    statusEl.className     = 'status';
-    statusEl.textContent   = '';
-    statusEl.style.display = 'none';
-  }
-
-  /**
-   * Shows the refresh banner and pre-fills the issue number when an imported frame
-   * is selected, or hides it when the selection changes to something else.
-   * The input is only updated when the detected number differs from what is already typed.
-   */
-  function updateRefreshBanner(issueNumber) {
-    if (issueNumber) {
-      if (issueInput.value !== issueNumber) issueInput.value = issueNumber;
-      refreshLabel.textContent    = `#${issueNumber} detected from selected frame`;
-      refreshBanner.style.display = 'flex';
-    } else {
-      refreshBanner.style.display = 'none';
-    }
-  }
-
-  /**
-   * Fetches a single issue from the GitHub REST API.
-   * Throws a human-readable error for 401, 403, and 404 responses.
-   */
-  async function fetchIssue(token, repo, issueNumber) {
-    const url = `https://api.github.com/repos/${repo}/issues/${issueNumber}`;
-    const res  = await fetch(url, {
-      headers: {
-        'Authorization':        `Bearer ${token}`,
-        'Accept':               'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      }
-    });
-
-    if (res.status === 401) throw new Error('Invalid token. Check your PAT and try again.');
-    if (res.status === 403) {
-      const remaining = res.headers.get('X-RateLimit-Remaining');
-      if (remaining === '0') {
-        const reset = res.headers.get('X-RateLimit-Reset');
-        const resetTime = reset ? new Date(Number(reset) * 1000).toLocaleTimeString() : 'soon';
-        throw new Error(`Rate limit exceeded. Resets at ${resetTime}.`);
-      }
-      throw new Error('Access forbidden. Make sure your PAT has the repo scope.');
-    }
-    if (res.status === 404) throw new Error('Issue not found. Check the repository name and issue number.');
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.message || `GitHub API error: ${res.status}`);
-    }
-
-    return res.json();
-  }
-
-  /**
-   * Returns a plain segment object with all formatting flags set to their defaults.
-   */
-  function plain(text) {
-    return { text, bold: false, italic: false, code: false, strikethrough: false, link: null };
-  }
-
-  /**
-   * Converts a GitHub issue body (markdown string) into an array of typed block objects
-   * ready to be sent to the plugin sandbox for rendering.
-   */
-  function parseMarkdown(body) {
-    const lines = body.split('\n');
-    const raw   = [];
-
-    let inFencedCode = false;
-    let fencePattern = null;
-    let codeLines    = [];
-    let codeLang     = '';
-
-    for (const line of lines) {
-      if (inFencedCode) {
-        if (fencePattern.test(line)) {
-          raw.push({ type: 'codeBlock', text: codeLines.join('\n'), lang: codeLang });
-          inFencedCode = false;
-          fencePattern = null;
-          codeLines    = [];
-          codeLang     = '';
-        } else {
-          codeLines.push(line);
-        }
-        continue;
-      }
-
-      // Opening fence: ``` or ~~~
-      const fenceMatch = line.match(/^(`{3,}|~{3,})(\w*)/);
-      if (fenceMatch) {
-        const ch    = fenceMatch[1][0];
-        const count = fenceMatch[1].length;
-        inFencedCode = true;
-        fencePattern = new RegExp(`^${ch === '`' ? '`' : '~'}{${count},}\\s*$`);
-        codeLang     = fenceMatch[2] || '';
-        codeLines    = [];
-        continue;
-      }
-
-      // Horizontal rule
-      if (/^(\-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-        raw.push({ type: 'horizontalRule' });
-        continue;
-      }
-
-      // Heading
-      const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
-      if (headingMatch) {
-        raw.push({
-          type: 'heading',
-          level: Math.min(headingMatch[1].length, 3),
-          segments: parseInline(headingMatch[2].trim()),
-        });
-        continue;
-      }
-
-      // Ordered list
-      const orderedMatch = line.match(/^(\s*)(\d+)\.\s+(.+)/);
-      if (orderedMatch) {
-        raw.push({
-          type: 'listItem',
-          ordered: true,
-          index: Number(orderedMatch[2]),
-          indent: Math.floor(orderedMatch[1].length / 2),
-          segments: parseInline(orderedMatch[3]),
-        });
-        continue;
-      }
-
-      // Unordered list
-      const unorderedMatch = line.match(/^(\s*)[-*+]\s+(.+)/);
-      if (unorderedMatch) {
-        raw.push({
-          type: 'listItem',
-          ordered: false,
-          indent: Math.floor(unorderedMatch[1].length / 2),
-          segments: parseInline(unorderedMatch[2]),
-        });
-        continue;
-      }
-
-      // Blockquote
-      const bqMatch = line.match(/^>\s?(.*)/);
-      if (bqMatch) {
-        raw.push({ type: 'blockquote', segments: parseInline(bqMatch[1]) });
-        continue;
-      }
-
-      // Blank line
-      if (/^\s*$/.test(line)) {
-        raw.push({ type: 'blank' });
-        continue;
-      }
-
-      // Paragraph
-      raw.push({ type: 'paragraph', segments: parseInline(line) });
-    }
-
-    // Flush unclosed code block
-    if (inFencedCode && codeLines.length > 0) {
-      raw.push({ type: 'codeBlock', text: codeLines.join('\n'), lang: codeLang });
-    }
-
-    return mergeBlocks(raw);
-  }
-
-  /**
-   * Collapses consecutive paragraph blocks into one (separated by \n\n) and
-   * consecutive listItem blocks into a single listGroup, reducing the number
-   * of Figma nodes created.
-   */
-  function mergeBlocks(blocks) {
-    const merged = [];
-    let i = 0;
-
-    while (i < blocks.length) {
-      const block = blocks[i];
-
-      if (block.type === 'paragraph') {
-        let combinedSegments = [...block.segments];
-        let j = i + 1;
-
-        while (j < blocks.length) {
-          if (blocks[j].type === 'blank') { j++; continue; }
-          if (blocks[j].type === 'paragraph') {
-            combinedSegments.push(plain('\n\n'));
-            combinedSegments = combinedSegments.concat(blocks[j].segments);
-            j++;
-            while (j < blocks.length && blocks[j].type === 'blank') j++;
-          } else {
+        switch (msg.type) {
+          case 'settings-loaded':
+            patInput.value = msg.token || '';
+            repoInput.value = msg.repo || '';
+            updateRefreshBanner(msg.selectedIssueNumber);
             break;
+          case 'selection-changed':
+            updateRefreshBanner(msg.selectedIssueNumber);
+            break;
+          case 'insert-complete':
+            setStatus('success', 'Issue imported successfully!');
+            setLoading(false);
+            break;
+          case 'insert-error':
+            setStatus('error', `Insert failed: ${msg.message}`);
+            setLoading(false);
+            break;
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        parent.postMessage({ pluginMessage: { type: 'load-settings' } }, '*');
+      });
+
+      patInput.addEventListener('blur', saveSettings);
+      repoInput.addEventListener('blur', saveSettings);
+
+      patToggle.addEventListener('click', () => {
+        patInput.type = patInput.type === 'password' ? 'text' : 'password';
+      });
+
+      closeBtn.addEventListener('click', () => {
+        parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+      });
+
+      issueInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') fetchBtn.click();
+      });
+
+      /**
+       * Validates inputs, fetches the issue from GitHub, parses its body,
+       * and sends the result to the plugin sandbox for rendering.
+       */
+      async function doImport() {
+        const token = patInput.value.trim();
+        const repo = repoInput.value.trim();
+        const issueNum = issueInput.value.trim();
+
+        clearStatus();
+
+        if (!token) return setStatus('error', 'Personal Access Token is required.');
+        if (!repo || !repo.includes('/'))
+          return setStatus('error', 'Repository must be in owner/repo format.');
+        if (!issueNum || isNaN(Number(issueNum)) || Number(issueNum) < 1)
+          return setStatus('error', 'Issue number must be a positive integer.');
+
+        saveSettings();
+        setLoading(true);
+
+        try {
+          const issue = await fetchIssue(token, repo, issueNum);
+          const blocks = parseMarkdown(issue.body || '');
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: 'insert-issue',
+                issueNumber: issueNum,
+                title: issue.title,
+                blocks,
+              },
+            },
+            '*',
+          );
+        } catch (err) {
+          setStatus('error', err.message);
+          setLoading(false);
+        }
+      }
+
+      fetchBtn.addEventListener('click', doImport);
+      refreshBtn.addEventListener('click', doImport);
+
+      /**
+       * Persists the current PAT and repository values to the plugin sandbox for storage.
+       */
+      function saveSettings() {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'save-settings',
+              token: patInput.value.trim(),
+              repo: repoInput.value.trim(),
+            },
+          },
+          '*',
+        );
+      }
+
+      /**
+       * Toggles the loading state: disables both import buttons and shows the spinner.
+       */
+      function setLoading(active) {
+        fetchBtn.disabled = active;
+        refreshBtn.disabled = active;
+        spinner.style.display = active ? 'block' : 'none';
+        btnLabel.textContent = active ? 'Importing…' : 'Fetch & Import';
+      }
+
+      /**
+       * Displays a status message. type is 'success' or 'error'.
+       */
+      function setStatus(type, message) {
+        statusEl.className = `status ${type}`;
+        statusEl.textContent = message;
+        statusEl.style.display = 'block';
+      }
+
+      /**
+       * Hides and resets the status message area.
+       */
+      function clearStatus() {
+        statusEl.className = 'status';
+        statusEl.textContent = '';
+        statusEl.style.display = 'none';
+      }
+
+      /**
+       * Shows the refresh banner and pre-fills the issue number when an imported frame
+       * is selected, or hides it when the selection changes to something else.
+       * The input is only updated when the detected number differs from what is already typed.
+       */
+      function updateRefreshBanner(issueNumber) {
+        if (issueNumber) {
+          if (issueInput.value !== issueNumber) issueInput.value = issueNumber;
+          refreshLabel.textContent = `#${issueNumber} detected from selected frame`;
+          refreshBanner.style.display = 'flex';
+        } else {
+          refreshBanner.style.display = 'none';
+        }
+      }
+
+      /**
+       * Fetches a single issue from the GitHub REST API.
+       * Throws a human-readable error for 401, 403, and 404 responses.
+       */
+      async function fetchIssue(token, repo, issueNumber) {
+        const url = `https://api.github.com/repos/${repo}/issues/${issueNumber}`;
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        });
+
+        if (res.status === 401) throw new Error('Invalid token. Check your PAT and try again.');
+        if (res.status === 403) {
+          const remaining = res.headers.get('X-RateLimit-Remaining');
+          if (remaining === '0') {
+            const reset = res.headers.get('X-RateLimit-Reset');
+            const resetTime = reset ? new Date(Number(reset) * 1000).toLocaleTimeString() : 'soon';
+            throw new Error(`Rate limit exceeded. Resets at ${resetTime}.`);
           }
+          throw new Error('Access forbidden. Make sure your PAT has the repo scope.');
+        }
+        if (res.status === 404)
+          throw new Error('Issue not found. Check the repository name and issue number.');
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.message || `GitHub API error: ${res.status}`);
         }
 
-        merged.push({ type: 'paragraph', segments: combinedSegments });
-        i = j;
-      } else if (block.type === 'listItem') {
-        const items = [block];
-        let j = i + 1;
-        while (j < blocks.length && blocks[j].type === 'listItem') {
-          items.push(blocks[j]);
-          j++;
-        }
-        merged.push({ type: 'listGroup', items });
-        i = j;
-      } else {
-        merged.push(block);
-        i++;
-      }
-    }
-
-    return merged;
-  }
-
-  /**
-   * Parses inline markdown in a single line of text into an array of segments,
-   * each carrying the text and its formatting flags (bold, italic, code, etc.).
-   * Processes markers in priority order: code > bold+italic > bold > italic > strikethrough > link.
-   */
-  function parseInline(text) {
-    const segments = [];
-    let i          = 0;
-    let plainStart = 0;
-
-    /**
-     * Pushes any accumulated plain text between the last match and end as a plain segment.
-     */
-    function flushPlain(end) {
-      if (end > plainStart) segments.push(plain(text.slice(plainStart, end)));
-      plainStart = end;
-    }
-
-    while (i < text.length) {
-      // Inline code: `code` (highest priority — no formatting inside)
-      if (text[i] === '`') {
-        const close = text.indexOf('`', i + 1);
-        if (close !== -1) {
-          flushPlain(i);
-          segments.push({ ...plain(text.slice(i + 1, close)), code: true });
-          i = close + 1;
-          plainStart = i;
-          continue;
-        }
+        return res.json();
       }
 
-      // Bold+italic: ***text*** or ___text___
-      if (i + 2 < text.length && (text.startsWith('***', i) || text.startsWith('___', i))) {
-        const marker = text.slice(i, i + 3);
-        const close  = text.indexOf(marker, i + 3);
-        if (close !== -1) {
-          flushPlain(i);
-          segments.push({ ...plain(text.slice(i + 3, close)), bold: true, italic: true });
-          i = close + 3;
-          plainStart = i;
-          continue;
-        }
+      /**
+       * Returns a plain segment object with all formatting flags set to their defaults.
+       */
+      function plain(text) {
+        return { text, bold: false, italic: false, code: false, strikethrough: false, link: null };
       }
 
-      // Bold: **text** or __text__
-      if (i + 1 < text.length && (text.startsWith('**', i) || text.startsWith('__', i))) {
-        const marker = text.slice(i, i + 2);
-        const close  = text.indexOf(marker, i + 2);
-        if (close !== -1) {
-          flushPlain(i);
-          segments.push({ ...plain(text.slice(i + 2, close)), bold: true });
-          i = close + 2;
-          plainStart = i;
-          continue;
-        }
-      }
+      /**
+       * Converts a GitHub issue body (markdown string) into an array of typed block objects
+       * ready to be sent to the plugin sandbox for rendering.
+       */
+      function parseMarkdown(body) {
+        const lines = body.split('\n');
+        const raw = [];
 
-      // Italic: *text* or _text_
-      if (text[i] === '*' || text[i] === '_') {
-        const marker = text[i];
-        if (text[i + 1] !== marker) {
-          const close = text.indexOf(marker, i + 1);
-          if (close !== -1 && text[close - 1] !== marker) {
-            flushPlain(i);
-            segments.push({ ...plain(text.slice(i + 1, close)), italic: true });
-            i = close + 1;
-            plainStart = i;
+        let inFencedCode = false;
+        let fencePattern = null;
+        let codeLines = [];
+        let codeLang = '';
+
+        for (const line of lines) {
+          if (inFencedCode) {
+            if (fencePattern.test(line)) {
+              raw.push({ type: 'codeBlock', text: codeLines.join('\n'), lang: codeLang });
+              inFencedCode = false;
+              fencePattern = null;
+              codeLines = [];
+              codeLang = '';
+            } else {
+              codeLines.push(line);
+            }
             continue;
           }
-        }
-      }
 
-      // Strikethrough: ~~text~~
-      if (text.startsWith('~~', i)) {
-        const close = text.indexOf('~~', i + 2);
-        if (close !== -1) {
-          flushPlain(i);
-          segments.push({ ...plain(text.slice(i + 2, close)), strikethrough: true });
-          i = close + 2;
-          plainStart = i;
-          continue;
-        }
-      }
-
-      // Link: [text](url)
-      if (text[i] === '[') {
-        const closeBracket = text.indexOf(']', i + 1);
-        if (closeBracket !== -1 && text[closeBracket + 1] === '(') {
-          const closeParen = text.indexOf(')', closeBracket + 2);
-          if (closeParen !== -1) {
-            flushPlain(i);
-            segments.push({ ...plain(text.slice(i + 1, closeBracket)), link: text.slice(closeBracket + 2, closeParen) });
-            i = closeParen + 1;
-            plainStart = i;
+          // Opening fence: ``` or ~~~
+          const fenceMatch = line.match(/^(`{3,}|~{3,})(\w*)/);
+          if (fenceMatch) {
+            const ch = fenceMatch[1][0];
+            const count = fenceMatch[1].length;
+            inFencedCode = true;
+            fencePattern = new RegExp(`^${ch === '`' ? '`' : '~'}{${count},}\\s*$`);
+            codeLang = fenceMatch[2] || '';
+            codeLines = [];
             continue;
           }
+
+          // Horizontal rule
+          if (/^(\-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+            raw.push({ type: 'horizontalRule' });
+            continue;
+          }
+
+          // Heading
+          const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
+          if (headingMatch) {
+            raw.push({
+              type: 'heading',
+              level: Math.min(headingMatch[1].length, 3),
+              segments: parseInline(headingMatch[2].trim()),
+            });
+            continue;
+          }
+
+          // Ordered list
+          const orderedMatch = line.match(/^(\s*)(\d+)\.\s+(.+)/);
+          if (orderedMatch) {
+            raw.push({
+              type: 'listItem',
+              ordered: true,
+              index: Number(orderedMatch[2]),
+              indent: Math.floor(orderedMatch[1].length / 2),
+              segments: parseInline(orderedMatch[3]),
+            });
+            continue;
+          }
+
+          // Unordered list
+          const unorderedMatch = line.match(/^(\s*)[-*+]\s+(.+)/);
+          if (unorderedMatch) {
+            raw.push({
+              type: 'listItem',
+              ordered: false,
+              indent: Math.floor(unorderedMatch[1].length / 2),
+              segments: parseInline(unorderedMatch[2]),
+            });
+            continue;
+          }
+
+          // Blockquote
+          const bqMatch = line.match(/^>\s?(.*)/);
+          if (bqMatch) {
+            raw.push({ type: 'blockquote', segments: parseInline(bqMatch[1]) });
+            continue;
+          }
+
+          // Blank line
+          if (/^\s*$/.test(line)) {
+            raw.push({ type: 'blank' });
+            continue;
+          }
+
+          // Paragraph
+          raw.push({ type: 'paragraph', segments: parseInline(line) });
         }
+
+        // Flush unclosed code block
+        if (inFencedCode && codeLines.length > 0) {
+          raw.push({ type: 'codeBlock', text: codeLines.join('\n'), lang: codeLang });
+        }
+
+        return mergeBlocks(raw);
       }
 
-      i++;
-    }
+      /**
+       * Collapses consecutive paragraph blocks into one (separated by \n\n) and
+       * consecutive listItem blocks into a single listGroup, reducing the number
+       * of Figma nodes created.
+       */
+      function mergeBlocks(blocks) {
+        const merged = [];
+        let i = 0;
 
-    flushPlain(text.length);
+        while (i < blocks.length) {
+          const block = blocks[i];
 
-    return segments.length > 0 ? segments : [plain(text)];
-  }
-</script>
-</body>
+          if (block.type === 'paragraph') {
+            let combinedSegments = [...block.segments];
+            let j = i + 1;
+
+            while (j < blocks.length) {
+              if (blocks[j].type === 'blank') {
+                j++;
+                continue;
+              }
+              if (blocks[j].type === 'paragraph') {
+                combinedSegments.push(plain('\n\n'));
+                combinedSegments = combinedSegments.concat(blocks[j].segments);
+                j++;
+                while (j < blocks.length && blocks[j].type === 'blank') j++;
+              } else {
+                break;
+              }
+            }
+
+            merged.push({ type: 'paragraph', segments: combinedSegments });
+            i = j;
+          } else if (block.type === 'listItem') {
+            const items = [block];
+            let j = i + 1;
+            while (j < blocks.length && blocks[j].type === 'listItem') {
+              items.push(blocks[j]);
+              j++;
+            }
+            merged.push({ type: 'listGroup', items });
+            i = j;
+          } else {
+            merged.push(block);
+            i++;
+          }
+        }
+
+        return merged;
+      }
+
+      /**
+       * Parses inline markdown in a single line of text into an array of segments,
+       * each carrying the text and its formatting flags (bold, italic, code, etc.).
+       * Processes markers in priority order: code > bold+italic > bold > italic > strikethrough > link.
+       */
+      function parseInline(text) {
+        const segments = [];
+        let i = 0;
+        let plainStart = 0;
+
+        /**
+         * Pushes any accumulated plain text between the last match and end as a plain segment.
+         */
+        function flushPlain(end) {
+          if (end > plainStart) segments.push(plain(text.slice(plainStart, end)));
+          plainStart = end;
+        }
+
+        while (i < text.length) {
+          // Inline code: `code` (highest priority — no formatting inside)
+          if (text[i] === '`') {
+            const close = text.indexOf('`', i + 1);
+            if (close !== -1) {
+              flushPlain(i);
+              segments.push({ ...plain(text.slice(i + 1, close)), code: true });
+              i = close + 1;
+              plainStart = i;
+              continue;
+            }
+          }
+
+          // Bold+italic: ***text*** or ___text___
+          if (i + 2 < text.length && (text.startsWith('***', i) || text.startsWith('___', i))) {
+            const marker = text.slice(i, i + 3);
+            const close = text.indexOf(marker, i + 3);
+            if (close !== -1) {
+              flushPlain(i);
+              segments.push({ ...plain(text.slice(i + 3, close)), bold: true, italic: true });
+              i = close + 3;
+              plainStart = i;
+              continue;
+            }
+          }
+
+          // Bold: **text** or __text__
+          if (i + 1 < text.length && (text.startsWith('**', i) || text.startsWith('__', i))) {
+            const marker = text.slice(i, i + 2);
+            const close = text.indexOf(marker, i + 2);
+            if (close !== -1) {
+              flushPlain(i);
+              segments.push({ ...plain(text.slice(i + 2, close)), bold: true });
+              i = close + 2;
+              plainStart = i;
+              continue;
+            }
+          }
+
+          // Italic: *text* or _text_
+          if (text[i] === '*' || text[i] === '_') {
+            const marker = text[i];
+            if (text[i + 1] !== marker) {
+              const close = text.indexOf(marker, i + 1);
+              if (close !== -1 && text[close - 1] !== marker) {
+                flushPlain(i);
+                segments.push({ ...plain(text.slice(i + 1, close)), italic: true });
+                i = close + 1;
+                plainStart = i;
+                continue;
+              }
+            }
+          }
+
+          // Strikethrough: ~~text~~
+          if (text.startsWith('~~', i)) {
+            const close = text.indexOf('~~', i + 2);
+            if (close !== -1) {
+              flushPlain(i);
+              segments.push({ ...plain(text.slice(i + 2, close)), strikethrough: true });
+              i = close + 2;
+              plainStart = i;
+              continue;
+            }
+          }
+
+          // Link: [text](url)
+          if (text[i] === '[') {
+            const closeBracket = text.indexOf(']', i + 1);
+            if (closeBracket !== -1 && text[closeBracket + 1] === '(') {
+              const closeParen = text.indexOf(')', closeBracket + 2);
+              if (closeParen !== -1) {
+                flushPlain(i);
+                segments.push({
+                  ...plain(text.slice(i + 1, closeBracket)),
+                  link: text.slice(closeBracket + 2, closeParen),
+                });
+                i = closeParen + 1;
+                plainStart = i;
+                continue;
+              }
+            }
+          }
+
+          i++;
+        }
+
+        flushPlain(text.length);
+
+        return segments.length > 0 ? segments : [plain(text)];
+      }
+    </script>
+  </body>
 </html>
