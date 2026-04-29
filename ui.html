@@ -187,6 +187,36 @@
       transition: color 0.15s, background 0.15s;
     }
     .close-btn:hover { color: var(--text); background: var(--surface); }
+
+    .refresh-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(24, 160, 251, 0.10);
+      border: 1px solid rgba(24, 160, 251, 0.30);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .refresh-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .refresh-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -224,6 +254,11 @@
 
   <div class="divider"></div>
 
+  <div id="refresh-banner" class="refresh-banner" style="display:none">
+    <span id="refresh-label"></span>
+    <button class="refresh-btn" id="refresh-btn">↻ Refresh</button>
+  </div>
+
   <section>
     <div class="section-title">Import Issue</div>
 
@@ -250,15 +285,18 @@
 </div>
 
 <script>
-  const patInput    = document.getElementById('pat');
-  const repoInput   = document.getElementById('repo');
-  const issueInput  = document.getElementById('issue-num');
-  const fetchBtn    = document.getElementById('fetch-btn');
-  const spinner     = document.getElementById('spinner');
-  const btnLabel    = document.getElementById('btn-label');
-  const statusEl    = document.getElementById('status');
-  const patToggle   = document.getElementById('pat-toggle');
-  const closeBtn    = document.getElementById('close-btn');
+  const patInput      = document.getElementById('pat');
+  const repoInput     = document.getElementById('repo');
+  const issueInput    = document.getElementById('issue-num');
+  const fetchBtn      = document.getElementById('fetch-btn');
+  const spinner       = document.getElementById('spinner');
+  const btnLabel      = document.getElementById('btn-label');
+  const statusEl      = document.getElementById('status');
+  const patToggle     = document.getElementById('pat-toggle');
+  const closeBtn      = document.getElementById('close-btn');
+  const refreshBanner = document.getElementById('refresh-banner');
+  const refreshLabel  = document.getElementById('refresh-label');
+  const refreshBtn    = document.getElementById('refresh-btn');
 
   // ── Message receiver ──────────────────────────────────────────────────────
   window.onmessage = (event) => {
@@ -269,6 +307,10 @@
       case 'settings-loaded':
         patInput.value  = msg.token || '';
         repoInput.value = msg.repo  || '';
+        updateRefreshBanner(msg.selectedIssueNumber);
+        break;
+      case 'selection-changed':
+        updateRefreshBanner(msg.selectedIssueNumber);
         break;
       case 'insert-complete':
         setStatus('success', 'Issue imported successfully!');
@@ -302,14 +344,14 @@
     if (e.key === 'Enter') fetchBtn.click();
   });
 
-  fetchBtn.addEventListener('click', async () => {
+  async function doImport() {
     const token    = patInput.value.trim();
     const repo     = repoInput.value.trim();
     const issueNum = issueInput.value.trim();
 
     clearStatus();
 
-    if (!token)                    return setStatus('error', 'Personal Access Token is required.');
+    if (!token)                       return setStatus('error', 'Personal Access Token is required.');
     if (!repo || !repo.includes('/')) return setStatus('error', 'Repository must be in owner/repo format.');
     if (!issueNum || isNaN(Number(issueNum)) || Number(issueNum) < 1)
       return setStatus('error', 'Issue number must be a positive integer.');
@@ -332,7 +374,10 @@
       setStatus('error', err.message);
       setLoading(false);
     }
-  });
+  }
+
+  fetchBtn.addEventListener('click', doImport);
+  refreshBtn.addEventListener('click', doImport);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function saveSettings() {
@@ -346,7 +391,8 @@
   }
 
   function setLoading(active) {
-    fetchBtn.disabled   = active;
+    fetchBtn.disabled     = active;
+    refreshBtn.disabled   = active;
     spinner.style.display = active ? 'block' : 'none';
     btnLabel.textContent  = active ? 'Importing…' : 'Fetch & Import';
   }
@@ -355,6 +401,16 @@
     statusEl.className   = `status ${type}`;
     statusEl.textContent = message;
     statusEl.style.display = 'block';
+  }
+
+  function updateRefreshBanner(issueNumber) {
+    if (issueNumber) {
+      issueInput.value = issueNumber;
+      refreshLabel.textContent = `#${issueNumber} detected from selected frame`;
+      refreshBanner.style.display = 'flex';
+    } else {
+      refreshBanner.style.display = 'none';
+    }
   }
 
   function clearStatus() {

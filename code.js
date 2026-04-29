@@ -7,7 +7,7 @@ figma.ui.onmessage = async (msg) => {
         figma.clientStorage.getAsync('gh_pat'),
         figma.clientStorage.getAsync('gh_repo'),
       ]);
-      figma.ui.postMessage({ type: 'settings-loaded', token: token || '', repo: repo || '' });
+      figma.ui.postMessage({ type: 'settings-loaded', token: token || '', repo: repo || '', selectedIssueNumber: getSelectedIssueNumber() });
       break;
     }
     case 'save-settings': {
@@ -32,6 +32,19 @@ figma.ui.onmessage = async (msg) => {
     }
   }
 };
+
+figma.on('selectionchange', () => {
+  figma.ui.postMessage({ type: 'selection-changed', selectedIssueNumber: getSelectedIssueNumber() });
+});
+
+function getSelectedIssueNumber() {
+  const selection = figma.currentPage.selection;
+  if (selection.length > 0 && selection[0].type === 'FRAME') {
+    const match = selection[0].name.match(/^#(\d+):/);
+    if (match) return match[1];
+  }
+  return null;
+}
 
 async function insertIssue(issueNumber, title, blocks) {
   await loadAllFonts();
