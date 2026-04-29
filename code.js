@@ -1,5 +1,15 @@
 figma.showUI(__html__, { width: 420, height: 560, title: 'GitHub Issue Importer' });
 
+const FRAME_WIDTH      = 800;
+const FRAME_PADDING    = 32;
+const HEADING_SPACER   = 12;
+const FONT_SIZE_TITLE  = 28;
+const FONT_SIZE_BODY   = 14;
+const FONT_SIZE_CODE   = 13;
+const LINE_HEIGHT_BODY = 22;
+const LINE_HEIGHT_CODE = 20;
+const HEADING_SIZES    = { 1: 24, 2: 20, 3: 16 };
+
 figma.ui.onmessage = async (msg) => {
   switch (msg.type) {
     case 'load-settings': {
@@ -37,6 +47,10 @@ figma.on('selectionchange', () => {
   figma.ui.postMessage({ type: 'selection-changed', selectedIssueNumber: getSelectedIssueNumber() });
 });
 
+/**
+ * Returns the issue number from the selected frame's name (e.g. "#42: title" → "42"),
+ * or null if no matching frame is selected.
+ */
 function getSelectedIssueNumber() {
   const selection = figma.currentPage.selection;
   if (selection.length > 0 && selection[0].type === 'FRAME') {
@@ -46,18 +60,21 @@ function getSelectedIssueNumber() {
   return null;
 }
 
+/**
+ * Renders a parsed issue into the canvas: loads fonts, builds the frame,
+ * appends the title and all content blocks, then scrolls the viewport to the result.
+ */
 async function insertIssue(issueNumber, title, blocks) {
   await loadAllFonts();
   const frame = getOrCreateFrame(issueNumber, title);
 
-  const titleNode = createTitleNode(title);
-  frame.appendChild(titleNode);
+  frame.appendChild(createTitleNode(title));
 
   for (const block of blocks) {
     if (block.type === 'blank') continue;
     const node = createBlockNode(block);
     if (node !== null) {
-      if (block.type === 'heading') frame.appendChild(createSpacer(12));
+      if (block.type === 'heading') frame.appendChild(createSpacer(HEADING_SPACER));
       frame.appendChild(node);
     }
   }
@@ -66,6 +83,10 @@ async function insertIssue(issueNumber, title, blocks) {
   figma.viewport.scrollAndZoomIntoView([frame]);
 }
 
+/**
+ * Pre-loads all font variants used by the plugin in parallel.
+ * Must resolve before any text node is created.
+ */
 async function loadAllFonts() {
   await Promise.all([
     figma.loadFontAsync({ family: 'Inter', style: 'Regular' }),
@@ -76,6 +97,10 @@ async function loadAllFonts() {
   ]);
 }
 
+/**
+ * Returns the currently selected frame (clearing its children) or creates a new
+ * 800 px auto-layout frame centred in the viewport.
+ */
 function getOrCreateFrame(issueNumber, title) {
   const selection = figma.currentPage.selection;
   let frame;
@@ -88,136 +113,123 @@ function getOrCreateFrame(issueNumber, title) {
   } else {
     frame = figma.createFrame();
     const center = figma.viewport.center;
-    frame.x = center.x - 400;
+    frame.x = center.x - FRAME_WIDTH / 2;
     frame.y = center.y - 200;
   }
 
   frame.name = `#${issueNumber}: ${title.substring(0, 50)}`;
   frame.layoutMode = 'VERTICAL';
-  frame.resize(800, 100);
+  frame.resize(FRAME_WIDTH, 100);
   frame.primaryAxisSizingMode = 'AUTO';
   frame.counterAxisSizingMode = 'FIXED';
   frame.itemSpacing = 12;
-  frame.paddingTop = 32;
-  frame.paddingBottom = 32;
-  frame.paddingLeft = 32;
-  frame.paddingRight = 32;
+  frame.paddingTop    = FRAME_PADDING;
+  frame.paddingBottom = FRAME_PADDING;
+  frame.paddingLeft   = FRAME_PADDING;
+  frame.paddingRight  = FRAME_PADDING;
   frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
 
   return frame;
 }
 
-function createTitleNode(title) {
+/**
+ * Creates a text node with shared layout properties (STRETCH, WIDTH_AND_HEIGHT resize).
+ * All parameters are optional and fall back to body-text defaults.
+ */
+function makeTextNode({
+  family     = 'Inter',
+  style      = 'Regular',
+  size       = FONT_SIZE_BODY,
+  lineHeight = null,
+  color      = { r: 0.2, g: 0.2, b: 0.2 },
+} = {}) {
   const node = figma.createText();
-  node.fontName = { family: 'Inter', style: 'Bold' };
-  node.fontSize = 28;
-  node.characters = title;
+  node.fontName = { family, style };
+  node.fontSize = size;
+  if (lineHeight !== null) {
+    node.lineHeight = { value: lineHeight, unit: 'PIXELS' };
+  }
   node.textAutoResize = 'WIDTH_AND_HEIGHT';
   node.layoutAlign = 'STRETCH';
-  node.fills = [{ type: 'SOLID', color: { r: 0.067, g: 0.067, b: 0.067 } }];
+  node.fills = [{ type: 'SOLID', color }];
   return node;
 }
 
+/**
+ * Dispatches a parsed block to its specific renderer.
+ * Returns null for unknown or blank block types.
+ */
 function createBlockNode(block) {
   switch (block.type) {
-    case 'heading':
-      return createHeadingNode(block);
-    case 'paragraph':
-      return createParagraphNode(block);
-    case 'codeBlock':
-      return createCodeBlockNode(block);
-    case 'listItem':
-      return createListItemNode(block);
-    case 'listGroup':
-      return createListGroupNode(block);
-    case 'blockquote':
-      return createBlockquoteNode(block);
-    case 'horizontalRule':
-      return createHorizontalRuleNode();
-    default:
-      return null;
+    case 'heading':        return createHeadingNode(block);
+    case 'paragraph':      return createParagraphNode(block);
+    case 'codeBlock':      return createCodeBlockNode(block);
+    case 'listGroup':      return createListGroupNode(block);
+    case 'blockquote':     return createBlockquoteNode(block);
+    case 'horizontalRule': return createHorizontalRuleNode();
+    default:               return null;
   }
 }
 
+/**
+ * Creates a bold title text node for the issue title.
+ */
+function createTitleNode(title) {
+  const node = makeTextNode({ style: 'Bold', size: FONT_SIZE_TITLE, color: { r: 0.067, g: 0.067, b: 0.067 } });
+  node.characters = title;
+  return node;
+}
+
+/**
+ * Creates a bold heading text node sized by level (H1–H3).
+ */
 function createHeadingNode(block) {
-  const sizes = { 1: 24, 2: 20, 3: 16 };
-  const node = figma.createText();
-  node.fontName = { family: 'Inter', style: 'Bold' };
-  node.fontSize = sizes[block.level] || 16;
+  const node = makeTextNode({ style: 'Bold', size: HEADING_SIZES[block.level] || 16, color: { r: 0.067, g: 0.067, b: 0.067 } });
   node.characters = block.segments.map(s => s.text).join('');
-  node.textAutoResize = 'WIDTH_AND_HEIGHT';
-  node.layoutAlign = 'STRETCH';
-  node.fills = [{ type: 'SOLID', color: { r: 0.067, g: 0.067, b: 0.067 } }];
   applyInlineFormatting(node, block.segments);
   return node;
 }
 
+/**
+ * Creates a body-text paragraph node with inline formatting applied.
+ */
 function createParagraphNode(block) {
-  const node = figma.createText();
-  node.fontName = { family: 'Inter', style: 'Regular' };
-  node.fontSize = 14;
-  node.lineHeight = { value: 22, unit: 'PIXELS' };
+  const node = makeTextNode({ lineHeight: LINE_HEIGHT_BODY });
   node.characters = block.segments.map(s => s.text).join('');
-  node.textAutoResize = 'WIDTH_AND_HEIGHT';
-  node.layoutAlign = 'STRETCH';
-  node.fills = [{ type: 'SOLID', color: { r: 0.2, g: 0.2, b: 0.2 } }];
   applyInlineFormatting(node, block.segments);
   return node;
 }
 
+/**
+ * Creates a fenced code block as a grey rounded frame containing a monospace text node.
+ */
 function createCodeBlockNode(block) {
   const codeFrame = figma.createFrame();
   codeFrame.layoutMode = 'VERTICAL';
+  codeFrame.resize(FRAME_WIDTH - FRAME_PADDING * 2, 40);
   codeFrame.primaryAxisSizingMode = 'AUTO';
   codeFrame.counterAxisSizingMode = 'FIXED';
-  codeFrame.resize(736, 40);
-  codeFrame.paddingTop = 12;
+  codeFrame.paddingTop    = 12;
   codeFrame.paddingBottom = 12;
-  codeFrame.paddingLeft = 16;
-  codeFrame.paddingRight = 16;
+  codeFrame.paddingLeft   = 16;
+  codeFrame.paddingRight  = 16;
   codeFrame.cornerRadius = 6;
   codeFrame.fills = [{ type: 'SOLID', color: { r: 0.953, g: 0.953, b: 0.953 } }];
   codeFrame.layoutAlign = 'STRETCH';
 
-  const textNode = figma.createText();
-  textNode.fontName = { family: 'Courier New', style: 'Regular' };
-  textNode.fontSize = 13;
-  textNode.lineHeight = { value: 20, unit: 'PIXELS' };
+  const textNode = makeTextNode({ family: 'Courier New', size: FONT_SIZE_CODE, lineHeight: LINE_HEIGHT_CODE, color: { r: 0.15, g: 0.15, b: 0.15 } });
   textNode.characters = block.text;
-  textNode.fills = [{ type: 'SOLID', color: { r: 0.15, g: 0.15, b: 0.15 } }];
-  textNode.textAutoResize = 'WIDTH_AND_HEIGHT';
-  textNode.layoutAlign = 'STRETCH';
 
   codeFrame.appendChild(textNode);
   return codeFrame;
 }
 
-function createListItemNode(block) {
-  const node = figma.createText();
-  node.fontName = { family: 'Inter', style: 'Regular' };
-  node.fontSize = 14;
-  node.lineHeight = { value: 22, unit: 'PIXELS' };
-
-  const indent = '    '.repeat(block.indent || 0);
-  const prefix = block.ordered ? `${block.index}. ` : '• ';
-  const bodyText = block.segments.map(s => s.text).join('');
-  node.characters = indent + prefix + bodyText;
-  node.textAutoResize = 'WIDTH_AND_HEIGHT';
-  node.layoutAlign = 'STRETCH';
-  node.fills = [{ type: 'SOLID', color: { r: 0.2, g: 0.2, b: 0.2 } }];
-
-  const offset = indent.length + prefix.length;
-  applyInlineFormatting(node, block.segments, offset);
-  return node;
-}
-
+/**
+ * Creates a single text node for a group of consecutive list items,
+ * joined with newlines and prefixed with bullets or numbers.
+ */
 function createListGroupNode(block) {
-  const node = figma.createText();
-  node.fontName = { family: 'Inter', style: 'Regular' };
-  node.fontSize = 14;
-  node.lineHeight = { value: 22, unit: 'PIXELS' };
-  node.layoutAlign = 'STRETCH';
-  node.fills = [{ type: 'SOLID', color: { r: 0.2, g: 0.2, b: 0.2 } }];
+  const node = makeTextNode({ lineHeight: LINE_HEIGHT_BODY });
 
   let fullText = '';
   const formattingItems = [];
@@ -233,7 +245,6 @@ function createListGroupNode(block) {
   }
 
   node.characters = fullText;
-  node.textAutoResize = 'WIDTH_AND_HEIGHT';
 
   for (const { offset, segments } of formattingItems) {
     applyInlineFormatting(node, segments, offset);
@@ -242,19 +253,19 @@ function createListGroupNode(block) {
   return node;
 }
 
+/**
+ * Creates an italic, grey text node for a blockquote.
+ */
 function createBlockquoteNode(block) {
-  const node = figma.createText();
-  node.fontName = { family: 'Inter', style: 'Italic' };
-  node.fontSize = 14;
-  node.lineHeight = { value: 22, unit: 'PIXELS' };
+  const node = makeTextNode({ style: 'Italic', lineHeight: LINE_HEIGHT_BODY, color: { r: 0.45, g: 0.45, b: 0.45 } });
   node.characters = block.segments.map(s => s.text).join('');
-  node.textAutoResize = 'WIDTH_AND_HEIGHT';
-  node.layoutAlign = 'STRETCH';
-  node.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.45 } }];
   applyInlineFormatting(node, block.segments);
   return node;
 }
 
+/**
+ * Creates an invisible fixed-height frame used to add extra space above headings.
+ */
 function createSpacer(height) {
   const spacer = figma.createFrame();
   spacer.name = '.spacer';
@@ -264,19 +275,21 @@ function createSpacer(height) {
   return spacer;
 }
 
+/**
+ * Creates a light grey em-dash string as a visual horizontal rule.
+ */
 function createHorizontalRuleNode() {
-  const node = figma.createText();
-  node.fontName = { family: 'Inter', style: 'Regular' };
-  node.fontSize = 14;
+  const node = makeTextNode({ color: { r: 0.8, g: 0.8, b: 0.8 } });
   node.characters = '────────────────────────────────────────────────────';
-  node.fills = [{ type: 'SOLID', color: { r: 0.8, g: 0.8, b: 0.8 } }];
-  node.textAutoResize = 'WIDTH_AND_HEIGHT';
-  node.layoutAlign = 'STRETCH';
   return node;
 }
 
-function applyInlineFormatting(textNode, segments, offset) {
-  offset = offset || 0;
+/**
+ * Walks a segments array and applies character-range formatting (bold, italic,
+ * code, strikethrough, hyperlinks) to an existing text node.
+ * offset shifts all ranges for nodes where text is preceded by a prefix (e.g. list bullets).
+ */
+function applyInlineFormatting(textNode, segments, offset = 0) {
   let cursor = offset;
 
   for (const seg of segments) {
@@ -296,7 +309,7 @@ function applyInlineFormatting(textNode, segments, offset) {
 
     if (seg.code) {
       textNode.setRangeFontName(start, end, { family: 'Courier New', style: 'Regular' });
-      textNode.setRangeFontSize(start, end, 13);
+      textNode.setRangeFontSize(start, end, FONT_SIZE_CODE);
       textNode.setRangeFills(start, end, [{ type: 'SOLID', color: { r: 0.78, g: 0.18, b: 0.18 } }]);
     }
 
