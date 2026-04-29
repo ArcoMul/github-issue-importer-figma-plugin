@@ -2,6 +2,11 @@
 
 ## GitHub Issue Importer
 
-A Figma plugin that pulls GitHub issue content into a Figma frame with markdown formatting preserved.
+A Figma plugin that pulls GitHub issue content into a Figma frame with markdown
+formatting preserved.
 
-See [README.md](./README.md) for setup instructions, usage, and architecture details.
+See [README.md](./README.md) for setup instructions, usage, and architecture
+details.
+
+Make sure to always update the README after adding features or changing existing
+features.

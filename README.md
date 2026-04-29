@@ -15,6 +15,7 @@ A Figma plugin that fetches a GitHub issue from a private or public repository a
   - ~~Strikethrough~~
   - [Hyperlinks](https://example.com) (blue, clickable in Figma)
   - Horizontal rules
+- Detects previously imported frames on selection and offers a one-click **↻ Refresh** to reimport — no need to retype the issue number
 - Saves your PAT and repository to Figma's local client storage (persists per Figma account, never leaves your machine)
 - Reuses a selected frame (clearing its contents) or creates a new 800 px auto-layout frame at the viewport centre
 - Frame is named `#<number>: <title>` automatically
@@ -61,6 +62,10 @@ The plugin fetches the issue, parses the markdown body, and inserts it into Figm
 - If **nothing is selected**: a new frame is created at the viewport centre
 
 Settings (token + repo) are auto-saved on blur and pre-filled the next time you open the plugin.
+
+### Refreshing an imported issue
+
+When you select a frame that was previously imported by this plugin (identified by the `#<number>: <title>` naming convention), the plugin detects it automatically — regardless of whether the plugin was already open or you changed the selection while it was open. A blue **↻ Refresh** banner appears with the issue number pre-filled. Click it to fetch the latest content and update the frame in place.
 
 ## Markdown Rendering
 
@@ -125,6 +130,17 @@ Fonts are loaded with `figma.loadFontAsync` before any text node is created. The
 | Access forbidden. Make sure your PAT has the repo scope. | HTTP 403 — token lacks permissions |
 | Rate limit exceeded. Resets at HH:MM:SS. | HTTP 403 with `X-RateLimit-Remaining: 0` |
 | Issue not found. Check the repository name and issue number. | HTTP 404 — wrong repo or issue number |
+
+## Packaging
+
+`package.sh` produces a distributable zip in `dist/`:
+
+```bash
+./package.sh
+# → Created dist/github-issue-importer-v42.zip
+```
+
+The version number is the total Git commit count (`git rev-list --count HEAD`). Falls back to `v0` with a warning if the directory is not a Git repository. The zip contains `manifest.json`, `code.js`, and `ui.html` — the three files Figma requires to load the plugin.
 
 ## Limitations
 
