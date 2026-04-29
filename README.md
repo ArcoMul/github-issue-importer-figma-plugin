@@ -10,7 +10,7 @@ A Figma plugin that fetches a GitHub issue from a private or public repository a
   - `inline code` (monospace, red tint)
   - Fenced code blocks (grey background frame, Courier New)
   - Headings H1–H3 (24 / 20 / 16 px)
-  - Unordered (`•`) and ordered lists with nested indent support
+  - Unordered (`•`) and ordered lists — consecutive items grouped into a single text node
   - Blockquotes (italic, grey)
   - ~~Strikethrough~~
   - [Hyperlinks](https://example.com) (blue, clickable in Figma)

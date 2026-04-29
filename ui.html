@@ -523,6 +523,15 @@
 
         merged.push({ type: 'paragraph', segments: combinedSegments });
         i = j;
+      } else if (block.type === 'listItem') {
+        const items = [block];
+        let j = i + 1;
+        while (j < blocks.length && blocks[j].type === 'listItem') {
+          items.push(blocks[j]);
+          j++;
+        }
+        merged.push({ type: 'listGroup', items });
+        i = j;
       } else {
         merged.push(block);
         i++;

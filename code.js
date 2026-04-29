@@ -114,6 +114,8 @@ function createBlockNode(block) {
       return createCodeBlockNode(block);
     case 'listItem':
       return createListItemNode(block);
+    case 'listGroup':
+      return createListGroupNode(block);
     case 'blockquote':
       return createBlockquoteNode(block);
     case 'horizontalRule':
@@ -192,6 +194,37 @@ function createListItemNode(block) {
 
   const offset = indent.length + prefix.length;
   applyInlineFormatting(node, block.segments, offset);
+  return node;
+}
+
+function createListGroupNode(block) {
+  const node = figma.createText();
+  node.fontName = { family: 'Inter', style: 'Regular' };
+  node.fontSize = 14;
+  node.lineHeight = { value: 22, unit: 'PIXELS' };
+  node.layoutAlign = 'STRETCH';
+  node.fills = [{ type: 'SOLID', color: { r: 0.2, g: 0.2, b: 0.2 } }];
+
+  let fullText = '';
+  const formattingItems = [];
+
+  for (let idx = 0; idx < block.items.length; idx++) {
+    const item = block.items[idx];
+    const indent = '    '.repeat(item.indent || 0);
+    const prefix = item.ordered ? `${item.index}. ` : '• ';
+    const offset = fullText.length + indent.length + prefix.length;
+    fullText += indent + prefix + item.segments.map(s => s.text).join('');
+    if (idx < block.items.length - 1) fullText += '\n';
+    formattingItems.push({ offset, segments: item.segments });
+  }
+
+  node.characters = fullText;
+  node.textAutoResize = 'WIDTH_AND_HEIGHT';
+
+  for (const { offset, segments } of formattingItems) {
+    applyInlineFormatting(node, segments, offset);
+  }
+
   return node;
 }
 
