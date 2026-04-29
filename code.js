@@ -81,9 +81,9 @@ function getOrCreateFrame(issueNumber, title) {
 
   frame.name = `#${issueNumber}: ${title.substring(0, 50)}`;
   frame.layoutMode = 'VERTICAL';
+  frame.resize(800, 100);
   frame.primaryAxisSizingMode = 'AUTO';
   frame.counterAxisSizingMode = 'FIXED';
-  frame.resize(800, 100);
   frame.itemSpacing = 12;
   frame.paddingTop = 32;
   frame.paddingBottom = 32;
