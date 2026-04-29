@@ -44,6 +44,7 @@ async function insertIssue(issueNumber, title, blocks) {
     if (block.type === 'blank') continue;
     const node = createBlockNode(block);
     if (node !== null) {
+      if (block.type === 'heading') frame.appendChild(createSpacer(12));
       frame.appendChild(node);
     }
   }
@@ -239,6 +240,15 @@ function createBlockquoteNode(block) {
   node.fills = [{ type: 'SOLID', color: { r: 0.45, g: 0.45, b: 0.45 } }];
   applyInlineFormatting(node, block.segments);
   return node;
+}
+
+function createSpacer(height) {
+  const spacer = figma.createFrame();
+  spacer.name = '.spacer';
+  spacer.resize(1, height);
+  spacer.fills = [];
+  spacer.layoutAlign = 'STRETCH';
+  return spacer;
 }
 
 function createHorizontalRuleNode() {

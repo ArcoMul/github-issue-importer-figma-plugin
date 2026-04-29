@@ -81,6 +81,8 @@ Settings (token + repo) are auto-saved on blur and pre-filled the next time you 
 
 H4–H6 are rendered as H3. Images are not supported (the alt text is rendered as plain text). HTML tags within markdown are rendered as-is.
 
+Headings receive an invisible 12 px spacer node inserted before them in the auto-layout frame. Combined with the frame's uniform 12 px item gap, this gives headings 36 px of space above them versus 12 px between all other blocks. The spacer is named `.spacer` in the Figma layer panel. To adjust the amount, change the argument to `createSpacer()` in `code.js`.
+
 ## Architecture
 
 The plugin follows Figma's mandatory two-layer architecture:
