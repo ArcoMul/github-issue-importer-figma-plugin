@@ -34,7 +34,7 @@ figma.ui.onmessage = async (msg) => {
     }
     case 'insert-issue': {
       try {
-        await insertIssue(msg.issueNumber, msg.title, msg.blocks);
+        await insertIssue(msg.issueNumber, msg.title, msg.blocks, msg.repo);
         figma.ui.postMessage({ type: 'insert-complete' });
       } catch (err) {
         figma.ui.postMessage({ type: 'insert-error', message: err.message });
@@ -72,7 +72,7 @@ function getSelectedIssueNumber() {
  * Renders a parsed issue into the canvas: loads fonts, builds the frame,
  * appends the title and all content blocks, then scrolls the viewport to the result.
  */
-async function insertIssue(issueNumber, title, blocks) {
+async function insertIssue(issueNumber, title, blocks, repo) {
   await loadAllFonts();
   const frame = getOrCreateFrame(issueNumber, title);
 
@@ -86,6 +86,8 @@ async function insertIssue(issueNumber, title, blocks) {
       frame.appendChild(node);
     }
   }
+
+  frame.appendChild(createAttributionCaption(issueNumber, repo));
 
   figma.currentPage.selection = [frame];
   figma.viewport.scrollAndZoomIntoView([frame]);
@@ -305,6 +307,59 @@ function createSpacer(height) {
   spacer.fills = [];
   spacer.layoutAlign = 'STRETCH';
   return spacer;
+}
+
+/**
+ * Creates a right-aligned caption row at the bottom of the frame. Plain text, no background.
+ * Links repo+issue to the GitHub issue and the plugin name to the plugin repository.
+ */
+function createAttributionCaption(issueNumber, repo) {
+  const pluginName = 'Github Issue Importer';
+  const repoAndIssue = `${repo || 'GitHub'} #${issueNumber}`;
+  const prefix = 'Generated based on ';
+  const middle = ' using ';
+  const label = prefix + repoAndIssue + middle + pluginName;
+
+  const repoIssueStart = prefix.length;
+  const pluginStart = repoIssueStart + repoAndIssue.length + middle.length;
+
+  const textNode = figma.createText();
+  textNode.fontName = { family: 'Inter', style: 'Regular' };
+  textNode.fontSize = 11;
+  textNode.textAutoResize = 'WIDTH_AND_HEIGHT';
+  textNode.fills = [{ type: 'SOLID', color: { r: 0.6, g: 0.6, b: 0.6 } }];
+  textNode.characters = label;
+
+  if (repo) {
+    textNode.setRangeHyperlink(repoIssueStart, repoIssueStart + repoAndIssue.length, {
+      type: 'URL',
+      value: `https://github.com/${repo}/issues/${issueNumber}`,
+    });
+    textNode.setRangeFills(repoIssueStart, repoIssueStart + repoAndIssue.length, [
+      { type: 'SOLID', color: { r: 0.09, g: 0.46, b: 0.82 } },
+    ]);
+  }
+
+  textNode.setRangeHyperlink(pluginStart, pluginStart + pluginName.length, {
+    type: 'URL',
+    value: 'https://github.com/ArcoMul/github-issue-importer-figma-plugin',
+  });
+  textNode.setRangeFills(pluginStart, pluginStart + pluginName.length, [
+    { type: 'SOLID', color: { r: 0.09, g: 0.46, b: 0.82 } },
+  ]);
+
+  const row = figma.createFrame();
+  row.name = '.issue-link';
+  row.layoutMode = 'HORIZONTAL';
+  row.primaryAxisAlignItems = 'MAX';
+  row.counterAxisAlignItems = 'CENTER';
+  row.primaryAxisSizingMode = 'FIXED';
+  row.counterAxisSizingMode = 'AUTO';
+  row.fills = [];
+  row.layoutAlign = 'STRETCH';
+  row.appendChild(textNode);
+
+  return row;
 }
 
 /**

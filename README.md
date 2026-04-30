@@ -16,6 +16,7 @@ A Figma plugin that fetches a GitHub issue from a private or public repository a
   - [Hyperlinks](https://example.com) (blue, clickable in Figma)
   - Horizontal rules
 - Detects previously imported frames on selection and offers a one-click **↻ Refresh** to reimport — no need to retype the issue number
+- Appends a right-aligned attribution caption at the bottom of every generated frame: _Generated based on `owner/repo #<number>` using Github Issue Importer_ — both are clickable hyperlinks
 - Saves your PAT and repository to Figma's local client storage (persists per Figma account, never leaves your machine)
 - Reuses a selected frame (clearing its contents) or creates a new 800 px auto-layout frame at the viewport centre
 - Frame is named `#<number>: <title>` automatically
