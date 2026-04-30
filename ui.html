@@ -567,7 +567,11 @@
        * ready to be sent to the plugin sandbox for rendering.
        */
       function parseMarkdown(body) {
-        const lines = body.split('\n');
+        const lines = body
+          .replace(/^[ \t]*<img[^>]*>[ \t]*\r?\n/gim, '')
+          .replace(/<img[^>]*>/gi, '')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .split('\n');
         const raw = [];
 
         let inFencedCode = false;

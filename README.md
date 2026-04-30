@@ -52,20 +52,24 @@ Prettier is configured in `.prettierrc`.
 
 ## Setup
 
-### 1. Get a GitHub Personal Access Token
+### 1. Load the plugin in Figma
+
+1. Download the latest ZIP from the [releases page](https://github.com/ArcoMul/github-issue-importer-figma-plugin/releases)
+2. Unzip the file
+3. Open **Figma desktop** (the plugin requires the desktop app)
+4. Go to **Plugins → Development → Import plugin from manifest…**
+5. Select `manifest.json` from the unzipped folder
+6. The plugin now appears under **Plugins → Development → GitHub Issue Importer**
+
+### 2. Get a GitHub Personal Access Token
+
+The plugin contains a direct link to the GitHub token creation page with the required scopes pre-selected. You can also generate one manually:
 
 1. Go to **GitHub → Settings → Developer settings → Personal access tokens**
 2. Generate a new token (classic or fine-grained)
 3. Required scopes:
    - Classic PAT: `repo` (full repo access, needed for private repos)
    - Fine-grained PAT: `Contents` → Read-only on the target repository
-
-### 2. Load the plugin in Figma
-
-1. Open **Figma desktop** (the plugin requires the desktop app)
-2. Go to **Plugins → Development → Import plugin from manifest…**
-3. Select `figma-github/manifest.json`
-4. The plugin now appears under **Plugins → Development → GitHub Issue Importer**
 
 ## Usage
 
@@ -103,7 +107,7 @@ When you select a frame that was previously imported by this plugin (identified 
 | `[text](url)`                  | Blue hyperlink                   |
 | `---` / `***` / `___`          | Horizontal rule (em-dash string) |
 
-H4–H6 are rendered as H3. Images are not supported (the alt text is rendered as plain text). HTML tags within markdown are rendered as-is.
+H4–H6 are rendered as H3. Images are stripped from the output. HTML tags within markdown are rendered as-is.
 
 Headings receive an invisible 12 px spacer node inserted before them in the auto-layout frame. Combined with the frame's uniform 12 px item gap, this gives headings 36 px of space above them versus 12 px between all other blocks. The spacer is named `.spacer` in the Figma layer panel. To adjust the amount, change the argument to `createSpacer()` in `code.js`.
 
